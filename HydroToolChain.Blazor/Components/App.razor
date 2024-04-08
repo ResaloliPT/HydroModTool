@@ -8,7 +8,7 @@
 
 <ContextMenus></ContextMenus>
 
-@if (_appLoaded == false)
+@if (!_appLoaded)
 {
     <Loader />
 }
@@ -17,18 +17,27 @@ else
 <div class="app" style="display: flex; flex-direction: column">
     <AppHeader OnSelectedPage="OnPageSelected" />
     <AppContent SelectedPage="_selectedPage" />
+    
+    <AppLoader />
 </div>
 }
 
 @code
 {
     private AppPages _selectedPage = AppPages.CreateMods;
-
+    private bool _appLoading = false;
+    
     private bool _appLoaded;
 
     protected override void OnInitialized()
     {
         AppFacade.OnAppLoaded += AppFacadeOnOnAppLoaded;
+        AppFacade.OnAppStateChanged += AppFacadeOnOnAppStateChanged;
+    }
+
+    private void AppFacadeOnOnAppStateChanged()
+    {
+        _appLoading = AppFacade.AppLoading;
     }
 
     private void AppFacadeOnOnAppLoaded(bool loaded)

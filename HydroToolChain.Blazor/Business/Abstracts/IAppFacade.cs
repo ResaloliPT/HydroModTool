@@ -7,6 +7,8 @@ public interface IAppFacade
     public event Action OnAppStateChanged;
     public event Action<Boolean> OnAppLoaded;
 
+    public bool AppLoading { get; }
+    
     #region AppActions
 
     Task LoadSettings();

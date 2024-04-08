@@ -9,6 +9,17 @@ public class AppContext
     public event Action OnAppStateChanged = () => {};
 
     public event Action<ProjectData> OnProjectChanged = project => {};
+
+    private bool _appLoading;
+    public bool AppLoading
+    {
+        get => _appLoading;
+        set
+        {
+            _appLoading = value;
+            OnAppStateChanged.Invoke();
+        }
+    }
     
     public void SetLoaded(bool loaded)
     {

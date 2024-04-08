@@ -24,6 +24,7 @@ internal sealed class AppFacade : IAppFacade
     private readonly IOptions<ServiceCollectionExtensions.BlazorServiceOptions> _blazorOptions;
 
     private readonly AppContext _context;
+    private readonly AppLoader _appLoader;
 
     public AppFacade(
         IWritableOptions<AppData> appDataOptions,
@@ -33,7 +34,8 @@ internal sealed class AppFacade : IAppFacade
         IWindowsHelpers windowsHelpers,
         IAppConfiguration appConfiguration,
         IOptions<ServiceCollectionExtensions.BlazorServiceOptions> blazorOptions,
-        AppContext context)
+        AppContext context,
+        AppLoader appLoader)
     {
         _appDataOptions = appDataOptions;
         _dialogService = dialogService;
@@ -43,7 +45,8 @@ internal sealed class AppFacade : IAppFacade
         _appConfiguration = appConfiguration;
         _blazorOptions = blazorOptions;
         _context = context;
-        
+        _appLoader = appLoader;
+
         _appDataOptions.OnStateUpdated += OnAppStateUpdated;
         _appDataOptions.Update(options =>
         {
@@ -57,6 +60,8 @@ internal sealed class AppFacade : IAppFacade
         });
 
     }
+    
+    public bool AppLoading => _context.AppLoading;
 
     public event Action OnAppStateChanged
     {

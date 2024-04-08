@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         
         services.AddTransient(typeof(IAppFacade), typeof(AppFacade));
         services.AddSingleton<Business.AppContext>();
+        services.AddSingleton<AppLoader>();
         
         services.AddMudServices(config =>
         {

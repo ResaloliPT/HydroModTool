@@ -1,0 +1,13 @@
+﻿@inject IAppFacade _facade
+@inject Business.AppLoader _appLoader
+
+@if (_hasExistingLoader)
+{
+    <div class="app-spinner" >
+        <Loader  />
+    </div>
+}
+
+@code {
+    private bool _hasExistingLoader => _appLoader.HasLoaders;
+}

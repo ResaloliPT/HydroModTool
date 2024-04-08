@@ -5,26 +5,48 @@
     <DialogContent>
         <EditForm EditContext="@EditContext">
             <DataAnnotationsValidator/>
-            <div>
-                <div>
-                    <div>
-                        <MudTextField Variant="Variant.Outlined" T="string" Label="Name" @bind-Value="_newProject.Name" HelperText="Ex: HMLoader" For="@(() => _newProject.Name)"></MudTextField>
-                    </div>
-
-                    <MudTooltip Tooltip="Used for ordering when using legacy loading, leave 500 if mod is in steam workshop" Context="ctx">
-                        <div>
-                            <MudTextField Variant="Variant.Outlined" T="int" TValue="int" Icon="info" Label="Index" @bind-Value="_newProject.ModIndex" ValidationDisabled="true"></MudTextField>
-                        </div>
-                    </MudTooltip>
-                </div>
-
-                <div>
+            <MudGrid Spacing="1">
+                <MudItem lg="8" sm="12">
+                    <MudTextField Variant="Variant.Outlined" T="string" Label="Name" @bind-Value="_newProject.Name" HelperText="Ex: HMLoader" For="@(() => _newProject.Name)"></MudTextField>
+                </MudItem>
+                <MudItem lg="4" sm="12">
+                    <MudTextField HelperText="Used for ordering when using legacy loading, leave 500 if mod is in steam workshop" HelperTextOnFocus Variant="Variant.Outlined" T="int" TValue="int" Icon="info" Label="Index" @bind-Value="_newProject.ModIndex" ValidationDisabled="true"></MudTextField>
+                </MudItem>
+                
+                <MudItem sm="10">
                     <MudTextField Variant="Variant.Outlined" T="string" Label="Assets Path" @bind-Value="_newProject.CookedAssetsPath" HelperText="Ex: C:\contoso\Mining\Saved\Cooked\WindowsNoEditor\Mining" For="@(() => _newProject.CookedAssetsPath)"></MudTextField>
-                </div>
-                <div>
+                </MudItem>
+                <MudItem sm="2">
+                    <MudFileUpload T="string" FilesChanged="@OnAssetPathSelected">
+                        <ButtonTemplate Context="btnCtx">
+                            <MudFab HtmlTag="label"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.MoreHoriz"
+                                  for="@btnCtx"
+                                  Size="Size.Large">
+                            </MudFab>
+                        </ButtonTemplate>
+                    </MudFileUpload>
+                </MudItem>
+                
+                <MudItem sm="10">
                     <MudTextField Variant="Variant.Outlined" T="string" Label="Dist Path" @bind-Value="_newProject.OutputPath" HelperText="Ex: C:\contoso\ModDist"  For="@(() => _newProject.OutputPath)"></MudTextField>
-                </div>
-            </div>
+                </MudItem>
+                <MudItem sm="2">
+                    <MudFileUpload T="string" FilesChanged="@OnOutputPathSelected">
+                        <ButtonTemplate  Context="btnCtx">
+                            <MudFab HtmlTag="label"
+                                  Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.MoreHoriz"
+                                  for="@btnCtx"
+                                  Size="Size.Large">
+                            </MudFab>
+                        </ButtonTemplate>
+                    </MudFileUpload>
+                </MudItem>
+            </MudGrid>
         </EditForm>
     </DialogContent>
     <DialogActions>
@@ -64,4 +86,15 @@
         
         CloseDialog(true);
     }
+
+    private void OnOutputPathSelected(string path)
+    {
+        _newProject.OutputPath = path;
+    }
+
+    private void OnAssetPathSelected(string path)
+    {
+        _newProject.CookedAssetsPath = path;
+    }
+
 }

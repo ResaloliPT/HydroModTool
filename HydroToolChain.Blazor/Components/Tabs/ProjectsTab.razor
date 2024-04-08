@@ -1,27 +1,29 @@
 ﻿@inject IAppFacade Facade;
-
-<MudToolBar>
-    <MudButton Variant="Variant.Filled" OnClick="@Facade.AddProject">Add Project</MudButton>
-    <MudSpacer/>
-    <MudButtonGroup Variant="Variant.Filled">
-        <MudButton OnClick="@Facade.Stage">Stage</MudButton>
-        <MudButton OnClick="@Facade.Package">Package</MudButton>
-        <MudButton OnClick="@Facade.Copy">Copy</MudButton>
-        <MudButton OnClick="@Facade.LaunchGame">Launch Game</MudButton>
-        <MudTooltip Text="Do all steps in one click">
-            <MudButton OnClick="@Facade.DevExpress">Dev Express</MudButton>
-        </MudTooltip>
-    </MudButtonGroup>
-    <MudSpacer/>
-    <MudButtonGroup Variant="Variant.Filled">
-        <MudButton OnClick="@Facade.ClearLegacyMods">Clear Legacy Mods</MudButton>
-        <MudButton OnClick="@Facade.OpenModsFolder" >Mods Folder</MudButton>
-    </MudButtonGroup>
-</MudToolBar>
 <MudGrid Spacing="0" Justify="Justify.FlexStart">
+    <MudItem sm="12">
+        <MudToolBar>
+            <MudButton Variant="Variant.Filled" OnClick="@Facade.AddProject">Add Project</MudButton>
+            <MudSpacer/>
+            <MudButtonGroup Variant="Variant.Filled">
+                <MudButton OnClick="@Facade.Stage">Stage</MudButton>
+                <MudButton OnClick="@Facade.Package">Package</MudButton>
+                <MudButton OnClick="@Facade.Copy">Copy</MudButton>
+                <MudButton OnClick="@Facade.LaunchGame">Launch Game</MudButton>
+                <MudTooltip Text="Do all steps in one click">
+                    <MudButton OnClick="@Facade.DevExpress">Dev Express</MudButton>
+                </MudTooltip>
+            </MudButtonGroup>
+            <MudSpacer/>
+            <MudButtonGroup Variant="Variant.Filled">
+                <MudButton OnClick="@Facade.ClearLegacyMods">Clear Legacy Mods</MudButton>
+                <MudButton OnClick="@Facade.OpenModsFolder" >Mods Folder</MudButton>
+            </MudButtonGroup>
+        </MudToolBar>
+    </MudItem>
+    
     <MudItem sm="3" Style="border-right: 1px solid var(--mud-palette-dark)">
         <MudList @bind-SelectedValue="_selectedItem" Clickable>
-            @foreach(var project in _projects)
+            @foreach (var project in _projects)
             {
                 <MudListItem Expanded Value="project.Id" OnClick="() => OnProjectChange(project.Id)">
                     <ContextMenuTrigger MenuId="@ContextMenusIds.ProjectItemContextMenu" Data="@project">
@@ -31,19 +33,22 @@
             }
         </MudList>
     </MudItem>
+    
     <MudItem sm="9">
-        <MudTreeView T="ProjectAssetItem" Items="_assetItems" Hover Height="calc(100vh - 168.5px)">
-            <ItemTemplate Context="item">
-                <MudTreeViewItem Items="@item.TreeItems" @bind-Expanded="@item.IsExpanded">
-                    <Content>
-                        <MudTreeViewItemToggleButton @bind-Expanded="@item.IsExpanded" Visible="@item.HasChild" />
-                        <ContextMenuTrigger MenuId="@ContextMenusIds.AssetsContextMenu" Data="@item">
-                            <span>@item.DisplayName</span>
-                        </ContextMenuTrigger>
-                    </Content>
-                </MudTreeViewItem>
-            </ItemTemplate>
-        </MudTreeView>
+        <ContextMenuTrigger MenuId="@ContextMenusIds.AssetsContextMenu">
+            <MudTreeView T="ProjectAssetItem" Items="_assetItems" Hover Height="calc(100vh - 168.5px)">
+                <ItemTemplate Context="item">
+                    <ContextMenuTrigger MenuId="@ContextMenusIds.AssetsContextMenu" Data="@item">
+                        <MudTreeViewItem Items="@item.TreeItems" @bind-Expanded="@item.IsExpanded">
+                            <Content>
+                                <MudTreeViewItemToggleButton @bind-Expanded="@item.IsExpanded" Visible="@item.HasChild"/>
+                                <span>@item.DisplayName</span>
+                            </Content>
+                        </MudTreeViewItem>
+                    </ContextMenuTrigger>
+                </ItemTemplate>
+            </MudTreeView>
+        </ContextMenuTrigger>
     </MudItem>
 </MudGrid>
 
@@ -74,7 +79,15 @@
 
     private void OnAppStateChanged()
     {
+        _projects = Facade.GetProjects();
+        
         var project = Facade.GetCurrentProject();
+
+        if (project == null && _projects.Count > 0)
+        {
+            OnProjectChange(_projects.First().Id);
+            return;
+        }
 
         if (project != null)
         {

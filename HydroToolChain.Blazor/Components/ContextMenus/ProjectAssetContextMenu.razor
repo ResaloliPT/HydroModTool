@@ -4,9 +4,12 @@
     <Item OnClick="@OnAddAssets">
         Add Assets
     </Item>
-    <Item OnClick="@(() => OnRemoveAssets(context.Data))">
-        Remove
-    </Item>
+    @if (context.Data != null)
+    {
+        <Item OnClick="@(() => OnRemoveAssets(context.Data))">
+            Remove
+        </Item>
+    }
 </ContextMenu>
 
 @code {

@@ -1,26 +1,27 @@
 ﻿using HydroToolChain.App.Configuration.Data;
+using HydroToolChain.App.UE4Pak.Paker;
 
 namespace HydroToolChain.App.Tools;
 
 public class ToolsService : IToolsService
 {
     private readonly Stager _stager;
-    private readonly Packager _packager;
+    private readonly IPaker _paker;
     private readonly ProjectTools _projectTools;
 
     public ToolsService(
         Stager stager,
-        Packager packager,
+        IPaker paker,
         ProjectTools projectTools)
     {
         _stager = stager;
-        _packager = packager;
+        _paker = paker;
         _projectTools = projectTools;
     }
     
     public Task PackageAsync(ProjectData project)
     {
-        return _packager.PackageAsync(project);
+        return _paker.PakMod(project.OutputPath, project.Name, project.ModIndex, CancellationToken.None);
     }
 
     public Task StageAsync(ProjectData project, IReadOnlyCollection<GuidData> guids, IReadOnlyCollection<UidData> uids)
