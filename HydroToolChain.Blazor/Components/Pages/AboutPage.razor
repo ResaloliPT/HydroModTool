@@ -1,6 +1,5 @@
 ﻿@using System.Text
-
-@inject HttpClient Client;
+@inject IAppFacade _AppFacade;
 
 <MudPaper Height="100%" Width="100%" Style="padding: 10px; overflow-y: auto; scrollbar-width: thin">
     <MudMarkdown Value="@_htmlAbout"></MudMarkdown>
@@ -8,49 +7,12 @@
 
 @code
 {
-    private const string AboutMeUrl = "https://raw.githubusercontent.com/ResaloliPT/HydroModTool/master/Readme.md";
-
     private static string _aboutReadMe = "";
 
     private string _htmlAbout = ""; 
 
     protected override async Task OnInitializedAsync()
     {
-        await GetAboutReadme();
-
-        _htmlAbout = Markdig.Markdown.ToHtml(_aboutReadMe);
-    }
-
-    private async Task GetAboutReadme()
-    {
-        if (!string.IsNullOrEmpty(_aboutReadMe.Trim()))
-        {
-            return;
-        }
-        
-        try
-        {
-            var stream = await Client.GetStreamAsync(AboutMeUrl);
-            
-            using var stringStream = new StreamReader(stream, Encoding.UTF8);
-            _aboutReadMe = await stringStream.ReadToEndAsync();
-        }
-        catch (Exception)
-        {
-            try
-            {
-                var currentDirectory = AppContext.BaseDirectory;
-                var aboutFile = Path.Combine(currentDirectory, "About.md");
-
-                _aboutReadMe = await File.ReadAllTextAsync(aboutFile);
-            }
-            catch (Exception)
-            {
-                _aboutReadMe =
-                    @"# Hydroneer Modding Toolchain [![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://paypal.me/ResaloliPT)
-
-                Check the application repository [Here](https://github.com/ResaloliPT/HydroModTool)";
-            }
-        }
+        _htmlAbout = _AppFacade.GetReadme();
     }
 }

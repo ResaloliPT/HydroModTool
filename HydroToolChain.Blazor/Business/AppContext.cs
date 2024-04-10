@@ -1,8 +1,8 @@
-﻿using HydroToolChain.App.Configuration.Data;
+﻿using HydroToolChain.Blazor.DTOs;
 
 namespace HydroToolChain.Blazor.Business;
 
-public class AppContext
+internal class AppContext
 {
     public event Action<bool> OnAppLoaded = loaded => {};
 

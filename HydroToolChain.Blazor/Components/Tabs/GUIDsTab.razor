@@ -1,6 +1,4 @@
-﻿@using Microsoft.Extensions.Options
-
-@implements IDisposable;
+﻿@inherits AppComponentBase;
 
 @inject IAppFacade Facade;
 
@@ -55,11 +53,11 @@
 
 @code
 {
-    private IReadOnlyCollection<GuidData> _items = new List<GuidData>(0);
+    private IReadOnlyCollection<GuidRow> _items = Array.Empty<GuidRow>();
 
-    private GuidData? _selectedItem;
+    private GuidRow? _selectedItem;
 
-    private GuidData? _tempItem;
+    private GuidRow? _tempItem;
 
     protected override void OnInitialized()
     {
@@ -72,8 +70,16 @@
 
     private void UpdateItems()
     {
-        _items = Facade.GetGuids();
-        InvokeAsync(StateHasChanged);
+        _items = Facade.GetGuids().Select(guid => new GuidRow
+        {
+            Id = guid.Id,
+            Name = guid.Name,
+            RetailGuid = guid.RetailGuid,
+            ModdedGuid = guid.ModdedGuid
+        })
+        .ToArray();
+
+        UpdateView();
     }
 
     public void Dispose()
@@ -81,7 +87,7 @@
         Facade.OnAppStateChanged -= UpdateItems;
     }
 
-    private string CalculateRowClass(GuidData? currentRow, int rowNumber)
+    private string CalculateRowClass(GuidRow? currentRow, int rowNumber)
     {
         return _selectedItem != null && _selectedItem.Id == currentRow?.Id ? "selected" : string.Empty;
     }
@@ -93,12 +99,12 @@
 
     private void OnBeforeEdit(object item)
     {
-        _tempItem = item as GuidData;
+        _tempItem = item as GuidRow;
     }
 
     private void OnEditCancel(object item)
     {
-        var guidData = item as GuidData;
+        var guidData = item as GuidRow;
 
         guidData!.Name = _tempItem!.Name;
         guidData!.RetailGuid = _tempItem!.RetailGuid;
@@ -107,8 +113,14 @@
 
     private void OnEditCommit(object item)
     {
-        var guidData = item as GuidData;
+        var guidData = item as GuidRow;
 
-        Facade.UpdateGuid(guidData);
+        Facade.UpdateGuid(new GuidState
+        {
+            Id = guidData.Id,
+            Name = guidData.Name,
+            RetailGuid = guidData.RetailGuid,
+            ModdedGuid = guidData.ModdedGuid
+        });
     }
 }

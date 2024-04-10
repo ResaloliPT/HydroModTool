@@ -1,6 +1,4 @@
-﻿@using Microsoft.Extensions.Options
-
-@implements IDisposable;
+﻿@inherits AppComponentBase;
 
 @inject IAppFacade Facade;
 
@@ -55,11 +53,11 @@
 
 @code
 {
-    private IReadOnlyCollection<UidData> _items = new List<UidData>(0);
+    private IReadOnlyCollection<UidRow> _items = new List<UidRow>(0);
 
-    private UidData? _selectedItem;
+    private UidRow? _selectedItem;
 
-    private UidData? _tempItem;
+    private UidRow? _tempItem;
 
     protected override void OnInitialized()
     {
@@ -72,8 +70,17 @@
 
     private void UpdateItems()
     {
-        _items = Facade.GetUids();
-        InvokeAsync(StateHasChanged);
+        _items = Facade.GetUids()
+            .Select(uid => new UidRow
+            {
+                Id = uid.Id,
+                Name = uid.Name,
+                RetailUid = uid.RetailUid,
+                ModdedUid = uid.ModdedUid
+            })
+            .ToArray();
+
+        UpdateView();
     }
 
     public void Dispose()
@@ -81,7 +88,7 @@
         Facade.OnAppStateChanged -= UpdateItems;
     }
 
-    private string CalculateRowClass(UidData? currentRow, int rowNumber)
+    private string CalculateRowClass(UidRow? currentRow, int rowNumber)
     {
         return _selectedItem != null && _selectedItem.Id == currentRow?.Id ? "selected" : string.Empty;
     }
@@ -93,12 +100,12 @@
 
     private void OnBeforeEdit(object item)
     {
-        _tempItem = item as UidData;
+        _tempItem = item as UidRow;
     }
 
     private void OnEditCancel(object item)
     {
-        var uidData = item as UidData;
+        var uidData = item as UidRow;
 
         if (_tempItem == null)
         {
@@ -112,8 +119,14 @@
 
     private void OnEditCommit(object item)
     {
-        var guidData = item as UidData;
+        var uidData = item as UidRow;
 
-        Facade.UpdateUid(guidData);
+        Facade.UpdateUid(new UidState
+        {
+            Id = uidData.Id,
+            Name = uidData.Name,
+            RetailUid = uidData.RetailUid,
+            ModdedUid = uidData.ModdedUid
+        });
     }
 }

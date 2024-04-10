@@ -1,4 +1,7 @@
-﻿@inject IAppFacade Facade;
+﻿@using ProjectData = HydroToolChain.Blazor.DTOs.ProjectData
+@inherits AppComponentBase;
+
+@inject IAppFacade Facade;
 
 <ContextMenu CssClass="context-menu" Id="@ContextMenusIds.ProjectItemContextMenu">
     <Item OnClick="@(() => OnEditClick(context.Data))">
@@ -16,22 +19,22 @@
 {
     private void OnDeleteClick(object data)
     {
-        var project = data as ProjectData;
+        var projectId = data as Guid?;
     
-        Facade.DeleteProject(project!.Id);
+        Facade.DeleteProject(projectId.Value, CancellationToken);
     }
 
     private void OnEditClick(object data)
     {
-        var project = data as ProjectData;
+        var projectId = data as Guid?;
     
-        Facade.EditProject(project!.Id);
+        Facade.EditProject(projectId.Value, CancellationToken);
     }
     
     private void OnOpenDistFolder(object data)
     {
-        var project = data as ProjectData;
+        var projectId = data as Guid?;
     
-        Facade.OpenDistFolder(project!.Id);
+        Facade.OpenDistFolder(projectId.Value);
     }
 }

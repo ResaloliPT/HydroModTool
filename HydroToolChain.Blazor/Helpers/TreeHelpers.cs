@@ -1,20 +1,21 @@
 ﻿using HydroToolChain.App.Configuration.Data;
 using HydroToolChain.Blazor.Models.Data;
+using HydroToolChain.Blazor.State;
 
 namespace HydroToolChain.Blazor.Helpers;
 
 internal static class TreeHelpers
 {
-    public static HashSet<ProjectAssetItem> GetTreeNodesFromProject(ProjectData project)
+    public static HashSet<ProjectAssetItem> GetTreeNodesFromProject(IReadOnlyCollection<ProjectItemState> projectAssets)
     {
         var resultTree = new HashSet<ProjectAssetItem>();
 
         var rootNode = new ProjectAssetItem("root");
 
-        var orderedItem = project.Items
+        var orderedItems = projectAssets
             .OrderBy(i => i.Path);
         
-        foreach (var item in orderedItem)
+        foreach (var item in orderedItems)
         {
             var pathParts = item.Path.Split("\\", StringSplitOptions.RemoveEmptyEntries);
 

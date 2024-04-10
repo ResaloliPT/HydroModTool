@@ -1,11 +1,11 @@
-﻿using HydroToolChain.App.Configuration.Data;
+﻿using HydroToolChain.Blazor.State;
 
 namespace HydroToolChain.Blazor.Models.Data;
 
 public class ProjectAssetItem
 {
     public ProjectAssetItem (
-        ProjectItemData asset)
+        ProjectItemState asset)
     {
         Asset = asset;
     }
@@ -18,7 +18,7 @@ public class ProjectAssetItem
 
     public Guid Identifier { get; } = Guid.NewGuid();
     
-    public ProjectItemData? Asset { get; }
+    public ProjectItemState? Asset { get; }
 
     public bool IsFolder => Asset == null;
 

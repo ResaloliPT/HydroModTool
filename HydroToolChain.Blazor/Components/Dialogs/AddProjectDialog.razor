@@ -1,4 +1,6 @@
-﻿<MudDialog>
+﻿@inject BlazorOptions _BlazorOptions;
+
+<MudDialog>
     <TitleContent>
         <MudText Typo="Typo.h6">New Project: @_newProject.Name</MudText>
     </TitleContent>
@@ -17,34 +19,26 @@
                     <MudTextField Variant="Variant.Outlined" T="string" Label="Assets Path" @bind-Value="_newProject.CookedAssetsPath" HelperText="Ex: C:\contoso\Mining\Saved\Cooked\WindowsNoEditor\Mining" For="@(() => _newProject.CookedAssetsPath)"></MudTextField>
                 </MudItem>
                 <MudItem sm="2">
-                    <MudFileUpload T="string" FilesChanged="@OnAssetPathSelected">
-                        <ButtonTemplate Context="btnCtx">
-                            <MudFab HtmlTag="label"
-                                  Variant="Variant.Filled"
-                                  Color="Color.Primary"
-                                  StartIcon="@Icons.Material.Filled.MoreHoriz"
-                                  for="@btnCtx"
-                                  Size="Size.Large">
-                            </MudFab>
-                        </ButtonTemplate>
-                    </MudFileUpload>
+                    <MudFab HtmlTag="label"
+                            OnClick="@OpenCookedAssetPathDialog"
+                            Variant="Variant.Filled"
+                            Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.MoreHoriz"
+                            Size="Size.Large">
+                    </MudFab>
                 </MudItem>
                 
                 <MudItem sm="10">
                     <MudTextField Variant="Variant.Outlined" T="string" Label="Dist Path" @bind-Value="_newProject.OutputPath" HelperText="Ex: C:\contoso\ModDist"  For="@(() => _newProject.OutputPath)"></MudTextField>
                 </MudItem>
                 <MudItem sm="2">
-                    <MudFileUpload T="string" FilesChanged="@OnOutputPathSelected">
-                        <ButtonTemplate  Context="btnCtx">
-                            <MudFab HtmlTag="label"
-                                  Variant="Variant.Filled"
-                                  Color="Color.Primary"
-                                  StartIcon="@Icons.Material.Filled.MoreHoriz"
-                                  for="@btnCtx"
-                                  Size="Size.Large">
-                            </MudFab>
-                        </ButtonTemplate>
-                    </MudFileUpload>
+                    <MudFab HtmlTag="label"
+                            OnClick="@OpenOutputPathDialog"
+                            Variant="Variant.Filled"
+                            Color="Color.Primary"
+                            StartIcon="@Icons.Material.Filled.MoreHoriz"
+                            Size="Size.Large">
+                    </MudFab>
                 </MudItem>
             </MudGrid>
         </EditForm>
@@ -65,9 +59,9 @@
     
     protected override void OnInitialized()
     {
-        EditContext = new EditContext(_newProject);
-        
         base.OnInitialized();
+        
+        EditContext = new EditContext(_newProject);
     }
 
     private void CloseDialog(bool sendResult = false)
@@ -87,14 +81,28 @@
         CloseDialog(true);
     }
 
-    private void OnOutputPathSelected(string path)
+    private void OpenCookedAssetPathDialog()
     {
-        _newProject.OutputPath = path;
+        var path = _BlazorOptions.SelectFolder("Select cooked assets path");
+        
+        if (path is null)
+        {
+            return;
+        }
+        
+        _newProject.CookedAssetsPath = path;
     }
 
-    private void OnAssetPathSelected(string path)
+    private void OpenOutputPathDialog()
     {
-        _newProject.CookedAssetsPath = path;
+        var path = _BlazorOptions.SelectFolder("Select dist folder path");
+        
+        if (path is null)
+        {
+            return;
+        }
+        
+        _newProject.OutputPath = path;
     }
 
 }

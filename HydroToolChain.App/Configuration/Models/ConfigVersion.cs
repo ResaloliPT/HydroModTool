@@ -2,5 +2,5 @@
 
 public enum ConfigVersion
 {
-    _1
+    _1 = 1
 }

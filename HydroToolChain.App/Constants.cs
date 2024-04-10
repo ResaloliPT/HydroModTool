@@ -2,7 +2,7 @@
 
 public static class Constants
 {
-    private static string _paksFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mining", "Saved", "Paks");
+    private static readonly string _paksFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Mining", "Saved", "Paks");
     public static string PaksFolder {
         get
         {

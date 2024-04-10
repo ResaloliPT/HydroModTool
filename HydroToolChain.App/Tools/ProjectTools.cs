@@ -6,10 +6,10 @@ namespace HydroToolChain.App.Tools;
 
 public class ProjectTools
 {
-    private readonly IOptions<ServiceCollectionExtensions.ToolsServiceOptions> _options;
+    private readonly IOptions<AppOptions> _options;
 
     public ProjectTools(
-        IOptions<ServiceCollectionExtensions.ToolsServiceOptions> options
+        IOptions<AppOptions> options
     )
     {
         _options = options;
@@ -39,7 +39,7 @@ public class ProjectTools
             }
             catch (IOException)
             {
-                _options.Value.ShowMessage(@"Check if the game is open or try to delete manually.", MessageType.Warning);
+                _options.Value.ShowMessage(MessageType.Warning, @"Check if the game is open or try to delete manually.");
             }
         });
     }

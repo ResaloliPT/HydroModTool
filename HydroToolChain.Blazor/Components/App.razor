@@ -1,58 +1,32 @@
-﻿@implements IDisposable 
-
-@inject IAppFacade AppFacade
+﻿@inherits AppComponentBase;
+@inject IAppLoaderService _LoaderService;
 
 <MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
 <ContextMenus></ContextMenus>
+<AppLoader />
 
-@if (!_appLoaded)
-{
-    <Loader />
-}
-else
-{
-<div class="app" style="display: flex; flex-direction: column">
-    <AppHeader OnSelectedPage="OnPageSelected" />
-    <AppContent SelectedPage="_selectedPage" />
-    
-    <AppLoader />
-</div>
-}
+<AppHeader OnSelectedPage="OnPageSelected" />
+<AppContent SelectedPage="_selectedPage" />
 
 @code
 {
     private AppPages _selectedPage = AppPages.CreateMods;
-    private bool _appLoading = false;
-    
-    private bool _appLoaded;
-
-    protected override void OnInitialized()
-    {
-        AppFacade.OnAppLoaded += AppFacadeOnOnAppLoaded;
-        AppFacade.OnAppStateChanged += AppFacadeOnOnAppStateChanged;
-    }
-
-    private void AppFacadeOnOnAppStateChanged()
-    {
-        _appLoading = AppFacade.AppLoading;
-    }
-
-    private void AppFacadeOnOnAppLoaded(bool loaded)
-    {
-        _appLoaded = loaded;
-        InvokeAsync(StateHasChanged);
-    }
     
     private void OnPageSelected(AppPages page)
     {
         _selectedPage = page;
     }
-    
-    public void Dispose()
+
+    protected override void OnAfterRender(bool firstRender)
     {
-        AppFacade.OnAppLoaded -= AppFacadeOnOnAppLoaded;
+        base.OnAfterRender(firstRender);
+        
+        if (firstRender)
+        {
+            _LoaderService.RemoveLoader(LoadersNames.AppStarting);
+        }
     }
 }

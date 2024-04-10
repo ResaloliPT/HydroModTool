@@ -1,34 +1,24 @@
-﻿using HydroToolChain.App.Configuration.Data;
+﻿using HydroToolChain.Blazor.State;
 
 namespace HydroToolChain.Blazor.Business.Abstracts;
 
 public interface IAppFacade
 {
     public event Action OnAppStateChanged;
-    public event Action<Boolean> OnAppLoaded;
-
-    public bool AppLoading { get; }
-    
-    #region AppActions
-
-    Task LoadSettings();
-    Task SaveSettings();
-    
-    #endregion
     
     #region Project Main Actions
     
-    Task AddProject();
+    Task AddProject(CancellationToken ct);
 
-    Task<bool> Stage();
+    Task<bool> Stage(CancellationToken ct);
     
-    Task<bool> Package();
+    Task<bool> Package(CancellationToken ct);
     
-    Task<bool> Copy();
+    Task<bool> Copy(CancellationToken ct);
 
     void LaunchGame();
 
-    Task DevExpress();
+    Task DevExpress(CancellationToken ct);
     
     void OpenModsFolder();
     
@@ -38,23 +28,21 @@ public interface IAppFacade
 
     #region Project Actions
 
-    void SetCurrentProject(Guid projectId);
+    Task SetCurrentProject(Guid projectId, CancellationToken ct);
     
-    Task EditProject(Guid projectId);
+    Task EditProject(Guid projectId, CancellationToken ct);
     
-    void DeleteProject(Guid projectId);
-
-    void OpenAssetsFolder(Guid projectId);
+    Task DeleteProject(Guid projectId, CancellationToken ct);
     
     void OpenDistFolder(Guid projectId);
     
-    ProjectData? GetCurrentProject();
+    (ProjectState? project, IReadOnlyCollection<ProjectItemState> items) GetCurrentProject();
     
-    IReadOnlyCollection<ProjectData> GetProjects();
+    IReadOnlyCollection<ProjectState> GetProjects();
 
-    Task AddAssets();
+    Task AddAssets(CancellationToken ct);
     
-    Task RemoveAssets(IReadOnlyCollection<Guid> assetsToDelete);
+    Task RemoveAssets(IReadOnlyCollection<Guid> assetsToDelete, CancellationToken ct);
     #endregion
 
     #region UIDs Actions
@@ -63,9 +51,9 @@ public interface IAppFacade
 
     void RemoveUid(Guid? uidId);
     
-    IReadOnlyCollection<UidData> GetUids();
+    IReadOnlyCollection<UidState> GetUids();
     
-    void UpdateUid(UidData? uidData);
+    void UpdateUid(UidState? uidData);
 
     #endregion
 
@@ -74,9 +62,11 @@ public interface IAppFacade
 
     void RemoveGuid(Guid? guidId);
     
-    IReadOnlyCollection<GuidData> GetGuids();
+    IReadOnlyCollection<GuidState> GetGuids();
     
-    void UpdateGuid(GuidData? guidData);
+    void UpdateGuid(GuidState? guidData);
 
     #endregion
+
+    string GetReadme();
 }

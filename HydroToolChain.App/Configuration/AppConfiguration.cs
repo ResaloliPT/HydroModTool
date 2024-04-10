@@ -1,12 +1,17 @@
-﻿using HydroToolChain.App.Configuration.Data;
+﻿using System.Reflection;
+using HydroToolChain.App.Configuration.Data;
 using HydroToolChain.App.Configuration.Legacy;
 using HydroToolChain.App.Configuration.Models;
 using Newtonsoft.Json;
 
 namespace HydroToolChain.App.Configuration;
 
-public class AppConfiguration : IAppConfiguration
+internal class AppConfiguration : IAppConfiguration
 {
+    public static readonly string FileRoot = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+
+    public static readonly string AppDataFilePath = Path.Combine(FileRoot, "appData.json");
+    
     private readonly IWritableOptions<AppData> _appData;
 
     public AppConfiguration(
@@ -16,7 +21,7 @@ public class AppConfiguration : IAppConfiguration
         _appData = appData;
     }
 
-    public async Task<string?> ExportConfig(ConfigPartials? partial)
+    public async Task<(bool success, string content)> ExportConfig(ConfigPartials? partial, CancellationToken ct)
     {
         var fileContents = partial switch
         {
@@ -34,10 +39,10 @@ public class AppConfiguration : IAppConfiguration
 
         if (fileContents == null || fileContents.Trim().Equals(string.Empty))
         {
-            return null;
+            return (false, string.Empty);
         }
 
-        return await Task.FromResult(fileContents);
+        return await Task.FromResult((true, fileContents));
     }
 
     public async Task<bool> TryImport(string filePath)
@@ -92,6 +97,19 @@ public class AppConfiguration : IAppConfiguration
         #endregion
 
         return false;
+    }
+
+    public async Task ReloadAppData(AppData data, CancellationToken ct)
+    {
+        var config = JsonConvert.SerializeObject(data, Formatting.Indented);
+
+        await using var file = File.Open(AppDataFilePath, FileMode.Truncate);
+        await using var writer = new StreamWriter(file);
+        await writer.WriteAsync(config);
+        await writer.FlushAsync();
+        writer.Close();
+        
+        _appData.RequestUpdate();
     }
 
     private async Task<bool> TryLoadBackup(string fileContents)
@@ -149,15 +167,13 @@ public class AppConfiguration : IAppConfiguration
                     .DistinctBy(project => project.Id)
                     .ToList();
             });
-
-
         }
         catch (Exception)
         {
-            // Ignored
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     private async Task<bool> TryLoadPartial(string fileContents)
@@ -178,23 +194,21 @@ public class AppConfiguration : IAppConfiguration
             {
                 if (partial.PartialType == ConfigPartials.Guids)
                 {
-                    options.Guids = UpdateGuids(options.Guids, partial.Guids);
+                    options.Guids = UpdateGuids(options.Guids, partial.Guids!);
                     
                     return;
                 }
 
-                options.Uids = UpdateUids(options.Uids, partial.Uids);
+                options.Uids = UpdateUids(options.Uids, partial.Uids!);
 
             });
-
-            return true;
         }
         catch (Exception)
         {
-            // Ignore
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     private List<UidData> UpdateUids(List<UidData> optionsUids, List<UidData> partialUids)
@@ -296,26 +310,15 @@ public class AppConfiguration : IAppConfiguration
                     .ToList();
                 
                 updatedProjects.AddRange(newProjects);
-                updatedProjects = updatedProjects
-                    .Where(project => legacyProjects.AppConfiguration.Projects.Any(legacyProject => legacyProject.Id == project.Id))
-                    .Select(project =>
-                    {
-                        var legacyProject = legacyProjects.AppConfiguration.Projects
-                            .First(legacyProject => legacyProject.Id == project.Id);
-
-                        project.Name = legacyProject.Name;
-                        project.ModIndex = legacyProject.ModIndex;
-                        project.CookedAssetsPath = legacyProject.Path;
-                        project.OutputPath = legacyProject.OutputPath;
-                        project.Items = UpdateProjectItems(project.Items, legacyProject.Items);
-                        
-                        return project;
-                    })
-                    .ToList();
                 
                 options.Projects = updatedProjects
                     .DistinctBy(project => project.Id)
                     .ToList();
+
+                options.CurrentProject = options.CurrentProject == Guid.Empty || options.Projects
+                    .All(p => p.Id != options.CurrentProject)
+                    ? options.Projects.FirstOrDefault()?.Id ?? Guid.Empty
+                    : Guid.Empty;
             });
             
             return true;

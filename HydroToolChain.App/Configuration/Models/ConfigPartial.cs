@@ -4,9 +4,9 @@ namespace HydroToolChain.App.Configuration.Models;
 
 public sealed class ConfigPartial
 {
-    public ConfigPartials PartialType { get; set; }
+    public ConfigPartials PartialType { get; init; }
 
-    public List<GuidData> Guids { get; set; } = new(0);
+    public List<GuidData>? Guids { get; init; }
     
-    public List<UidData> Uids { get; set; } = new(0);
+    public List<UidData>? Uids { get; init; }
 }

@@ -1,16 +1,20 @@
-﻿@inject IAppFacade Facade;
+﻿@inherits AppComponentBase;
+
+@inject IAppFacade Facade;
+@inject StateWatchers _StateWatchers;
+
 <MudGrid Spacing="0" Justify="Justify.FlexStart">
     <MudItem sm="12">
         <MudToolBar>
-            <MudButton Variant="Variant.Filled" OnClick="@Facade.AddProject">Add Project</MudButton>
+            <MudButton Variant="Variant.Filled" OnClick="@(() => Facade.AddProject(CancellationToken))">Add Project</MudButton>
             <MudSpacer/>
             <MudButtonGroup Variant="Variant.Filled">
-                <MudButton OnClick="@Facade.Stage">Stage</MudButton>
-                <MudButton OnClick="@Facade.Package">Package</MudButton>
-                <MudButton OnClick="@Facade.Copy">Copy</MudButton>
+                <MudButton OnClick="@(() => Facade.Stage(CancellationToken))">Stage</MudButton>
+                <MudButton OnClick="@(() => Facade.Package(CancellationToken))">Package</MudButton>
+                <MudButton OnClick="@(() => Facade.Copy(CancellationToken))">Copy</MudButton>
                 <MudButton OnClick="@Facade.LaunchGame">Launch Game</MudButton>
                 <MudTooltip Text="Do all steps in one click">
-                    <MudButton OnClick="@Facade.DevExpress">Dev Express</MudButton>
+                    <MudButton OnClick="@(() => Facade.DevExpress(CancellationToken))">Dev Express</MudButton>
                 </MudTooltip>
             </MudButtonGroup>
             <MudSpacer/>
@@ -20,13 +24,12 @@
             </MudButtonGroup>
         </MudToolBar>
     </MudItem>
-    
-    <MudItem sm="3" Style="border-right: 1px solid var(--mud-palette-dark)">
-        <MudList @bind-SelectedValue="_selectedItem" Clickable>
+    <MudItem sm="3" Style="border-right: 1px solid var(--mud-palette-dark); height: calc(100vh - 168.5px); overflow-y: auto">
+        <MudList Clickable SelectedValue="_selectedItem">
             @foreach (var project in _projects)
             {
-                <MudListItem Expanded Value="project.Id" OnClick="() => OnProjectChange(project.Id)">
-                    <ContextMenuTrigger MenuId="@ContextMenusIds.ProjectItemContextMenu" Data="@project">
+                <MudListItem Expanded Value="project.Id" OnClick="@(() => OnProjectChange(project.Id))">
+                    <ContextMenuTrigger MenuId="@ContextMenusIds.ProjectItemContextMenu" Data="@project.Id">
                         <MudText Typo="Typo.h5" Style="overflow-wrap: anywhere">@project.Name</MudText>
                     </ContextMenuTrigger>
                 </MudListItem>
@@ -54,54 +57,48 @@
 
 @code
 {
-    private IReadOnlyCollection<ProjectData> _projects = new List<ProjectData>(0);
+    private IReadOnlyCollection<ProjectState> _projects = Array.Empty<ProjectState>();
     
-    private HashSet<ProjectAssetItem> _assetItems = new(0);
+    private HashSet<ProjectAssetItem> _assetItems = new();
     
-    private object _selectedItem = new {};
+    private object? _selectedItem = null;
     
     protected override void OnInitialized()
     {
         base.OnInitialized();
+        _StateWatchers.OnProjectChanged += OnProjectChanged;
+        _StateWatchers.OnSelectedProjectChanged += OnSelectedProjectChanged;
 
-        Facade.OnAppStateChanged += OnAppStateChanged;
-
-        _projects = Facade.GetProjects();
-
-        var currentProject = Facade.GetCurrentProject();
-
-        if (currentProject != null)
-        {
-            _assetItems = TreeHelpers.GetTreeNodesFromProject(currentProject);
-            _selectedItem = currentProject.Id;
-        }
+        LoadProjects();
     }
 
-    private void OnAppStateChanged()
+    private void OnSelectedProjectChanged()
+    {
+        _selectedItem = Facade.GetCurrentProject().project!.Id;
+        UpdateView();
+    }
+
+    private void OnProjectChanged()
+    {
+
+        LoadProjects();
+        
+        
+        UpdateView();
+    }
+
+
+    private void LoadProjects()
     {
         _projects = Facade.GetProjects();
+        var currentProject = Facade.GetCurrentProject();
+        if (currentProject.project == null)
+            return;
         
-        var project = Facade.GetCurrentProject();
-
-        if (project == null && _projects.Count > 0)
-        {
-            OnProjectChange(_projects.First().Id);
-            return;
-        }
-
-        if (project != null)
-        {
-            _assetItems = TreeHelpers.GetTreeNodesFromProject(project);
-            _selectedItem = project.Id;
-            InvokeAsync(StateHasChanged);
-            
-            return;
-        }
-
-        _assetItems = new HashSet<ProjectAssetItem>(0);
-        InvokeAsync(StateHasChanged);
+        _assetItems = TreeHelpers.GetTreeNodesFromProject(currentProject.items);
+        _selectedItem = currentProject.project.Id;
     }
-
+    
     private void OnProjectChange(object value)
     {
         if (value is not Guid projectId)
@@ -109,6 +106,11 @@
             return;
         }
         
-        Facade.SetCurrentProject(projectId);
+        Facade.SetCurrentProject(projectId, CancellationToken);
+    }
+
+    public override void DisposeComponent()
+    {
+        _StateWatchers.OnProjectChanged -= OnProjectChanged;
     }
 }

@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="AspNetCore.SassCompiler" Version="1.74.1" />
         <PackageReference Include="Blazor.ContextMenu" Version="1.16.0" />
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.15" />
         <PackageReference Include="MudBlazor" Version="6.2.5" />
@@ -21,6 +22,7 @@
     <ItemGroup>
       <Folder Include="Components\ContextMenus\" />
       <Folder Include="Components\Pages\" />
+      <Folder Include="wwwroot\" />
     </ItemGroup>
 
     <ItemGroup>

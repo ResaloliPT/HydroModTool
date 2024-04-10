@@ -1,4 +1,6 @@
-﻿@inject IAppFacade Facade;
+﻿@inherits AppComponentBase;
+
+@inject AppHeaderModel _model;
 
 <MudGrid Spacing="0" Justify="Justify.FlexStart" Style="padding: 10px">
     <MudItem sm="5">
@@ -10,11 +12,11 @@
     <MudItem sm="2">
         <MudButtonGroup Variant="Variant.Filled">
             <MudTooltip Text="Import backup files or configs from old app">
-                <MudButton OnClick="@Facade.LoadSettings" >Load</MudButton>
+                <MudButton OnClick="@(() => _model.LoadSettings(CancellationToken))">Load</MudButton>
             </MudTooltip>
             
             <MudTooltip Text="Create backups or partial files to share">
-                <MudButton OnClick="@(() => Facade.SaveSettings())">Save</MudButton>
+                <MudButton OnClick="@(() => _model.SaveSettings(CancellationToken))">Save</MudButton>
             </MudTooltip>
         </MudButtonGroup>
     </MudItem>

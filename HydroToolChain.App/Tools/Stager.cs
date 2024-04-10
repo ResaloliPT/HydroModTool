@@ -6,10 +6,10 @@ namespace HydroToolChain.App.Tools;
 
 public class Stager
 {
-    private readonly IOptions<ServiceCollectionExtensions.ToolsServiceOptions> _options;
+    private readonly IOptions<AppOptions> _options;
 
     public Stager(
-        IOptions<ServiceCollectionExtensions.ToolsServiceOptions> options
+        IOptions<AppOptions> options
     )
     {
         _options = options;
@@ -32,7 +32,7 @@ public class Stager
             if (missingFiles.Count > 0)
             {
                 _options.Value.ShowMessage(
-                    @$"These assets are missing: \n{string.Join("\n", missingFiles)} \n Staging aborted", MessageType.Error);
+                    MessageType.Error, @$"These assets are missing: \n{string.Join("\n", missingFiles)} \n Staging aborted");
 
                 return;
             }

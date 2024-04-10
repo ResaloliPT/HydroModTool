@@ -1,0 +1,14 @@
+﻿{
+  "Source": "Styles",
+  "Target": "wwwroot",
+  "Arguments": "--style=compressed",
+  "GenerateScopedCss": true,
+  "ScopedCssFolders": ["Components"],
+  "IncludePaths": [],
+
+  "Configurations": {
+    "Debug": {
+      "Arguments": "--style=expanded"
+    }
+  }
+}

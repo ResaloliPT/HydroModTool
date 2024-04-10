@@ -1,4 +1,6 @@
-﻿@inject IAppFacade Facade;
+﻿@inherits AppComponentBase;
+
+@inject IAppFacade Facade;
 
 <ContextMenu CssClass="context-menu" Id="@ContextMenusIds.AssetsContextMenu">
     <Item OnClick="@OnAddAssets">
@@ -19,12 +21,13 @@
 
         var assetsToDelete = TreeHelpers.GetAllChildAssetIds(assetItem!);
 
-        Facade.RemoveAssets(assetsToDelete);
+        Facade.RemoveAssets(assetsToDelete, CancellationToken);
     }
 
     private void OnAddAssets()
     {
-        Facade.AddAssets();
+        //TODO: Fix this
+        //Facade.AddAssets();
     }
 
 }

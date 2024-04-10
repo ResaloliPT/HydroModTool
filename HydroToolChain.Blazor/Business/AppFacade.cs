@@ -1,115 +1,54 @@
 ﻿using HydroToolChain.App;
-using HydroToolChain.App.Configuration;
-using HydroToolChain.App.Configuration.Data;
+using HydroToolChain.App.Business;
 using HydroToolChain.App.Models;
-using HydroToolChain.App.Tools;
-using HydroToolChain.App.WindowsHelpers;
 using HydroToolChain.Blazor.Business.Abstracts;
 using HydroToolChain.Blazor.Components.Dialogs;
+using HydroToolChain.Blazor.Helpers;
 using HydroToolChain.Blazor.Models;
-using Microsoft.Extensions.Options;
+using HydroToolChain.Blazor.State;
 using MudBlazor;
 using MudBlazor.Extensions;
+using ProjectData = HydroToolChain.Blazor.DTOs.ProjectData;
 
 namespace HydroToolChain.Blazor.Business;
 
-internal sealed class AppFacade : IAppFacade
+internal class AppFacade : IAppFacade
 {
-    private readonly IWritableOptions<AppData> _appDataOptions;
+    private readonly Helpers.Helpers _helpers;
+    private readonly ConfigurationHelpers _configurationHelpers;
+    private readonly StateWatchers _stateWatchers;
+    private readonly IProjectActions _projectActions;
+    private readonly IAppActions _appActions;
+    private readonly AppState _appState;
     private readonly IDialogService _dialogService;
     private readonly ISnackbar _snackbar;
-    private readonly IToolsService _toolsService;
-    private readonly IWindowsHelpers _windowsHelpers;
-    private readonly IAppConfiguration _appConfiguration;
-    private readonly IOptions<ServiceCollectionExtensions.BlazorServiceOptions> _blazorOptions;
-
-    private readonly AppContext _context;
-    private readonly AppLoader _appLoader;
+    private readonly IAppLoaderService _loaderService;
 
     public AppFacade(
-        IWritableOptions<AppData> appDataOptions,
+        Helpers.Helpers helpers,
+        ConfigurationHelpers configurationHelpers,
+        StateWatchers stateWatchers,
+        IProjectActions projectActions,
+        IAppActions appActions,
+        AppState appState,
         IDialogService dialogService,
         ISnackbar snackbar,
-        IToolsService toolsService,
-        IWindowsHelpers windowsHelpers,
-        IAppConfiguration appConfiguration,
-        IOptions<ServiceCollectionExtensions.BlazorServiceOptions> blazorOptions,
-        AppContext context,
-        AppLoader appLoader)
+        IAppLoaderService loaderService)
     {
-        _appDataOptions = appDataOptions;
+        _helpers = helpers;
+        _configurationHelpers = configurationHelpers;
+        _stateWatchers = stateWatchers;
+        _projectActions = projectActions;
+        _appActions = appActions;
+        _appState = appState;
         _dialogService = dialogService;
         _snackbar = snackbar;
-        _toolsService = toolsService;
-        _windowsHelpers = windowsHelpers;
-        _appConfiguration = appConfiguration;
-        _blazorOptions = blazorOptions;
-        _context = context;
-        _appLoader = appLoader;
-
-        _appDataOptions.OnStateUpdated += OnAppStateUpdated;
-        _appDataOptions.Update(options =>
-        {
-            var existingCurrentProject = options.CurrentProject;
-            if (!options.Projects.Exists(p => p.Id == existingCurrentProject))
-                options.CurrentProject = options.Projects
-                    .FirstOrDefault()?.Id ?? Guid.Empty;
-            
-            
-            _context.SetLoaded(true);
-        });
-
+        _loaderService = loaderService;
     }
     
-    public bool AppLoading => _context.AppLoading;
+    public event Action? OnAppStateChanged;
 
-    public event Action OnAppStateChanged
-    {
-        add => _context.OnAppStateChanged += value;
-        remove => _context.OnAppStateChanged -= value;
-    }
-
-    public event Action<bool> OnAppLoaded
-    {
-        add => _context.OnAppLoaded += value;
-        remove => _context.OnAppLoaded -= value;
-    }
-
-    public async Task LoadSettings()
-    {
-        var selectedFilePath =  await _blazorOptions.Value.ConfigImporterHelper();
-
-        if (selectedFilePath == null)
-        {
-            return;
-        }
-
-        if (await _appConfiguration.TryImport(selectedFilePath))
-        {
-            _context.StateChanged();
-            
-            ShowToast("Config imported", MessageType.Info);
-            return;
-        }
-
-        ShowToast("Failed to import config", MessageType.Warning);
-    }
-
-    public async Task SaveSettings()
-    {
-        var saveResult = await SaveSettingsInner();
-
-        if (saveResult.HasValue && saveResult.Value)
-        {
-            ShowToast("Config exported", MessageType.Info);
-        }
-        else if (saveResult.HasValue && saveResult.Value == false)
-        {
-            ShowToast("Failed to export config", MessageType.Warning);
-        }
-    }
-
-    public async Task AddProject()
+    public async Task AddProject(CancellationToken ct)
     {
         var result = (await (await _dialogService.ShowAsync<AddProjectDialog>()!).Result)!.Data.As<ProjectData?>();
 
@@ -117,446 +56,250 @@ internal sealed class AppFacade : IAppFacade
         {
             return;
         }
-            
-        await _appDataOptions.Update(options =>
-        {
-            options.CurrentProject = result.Id;
-            options.Projects.Add(result);
-        });
-    }
 
-    public void SetCurrentProject(Guid projectId)
-    {
-        _appDataOptions.Update(options =>
-        {
-            options.CurrentProject = projectId;
-        }).ContinueWith(_ =>
-        {
-            _context.ProjectChanged(GetCurrentProject()!);
-        });
-    }
-
-    public async Task EditProject(Guid projectId)
-    {
-        var project = GetProjectById(projectId);
+        _loaderService.AddLoader(LoadersNames.AddProject);
         
-        var result = (await (await _dialogService.ShowAsync<EditProjectDialog>(null, new DialogParameters
+        var projects = await _projectActions.AddProject(new App.Configuration.Data.ProjectData(result.Id)
         {
-            {"Project", project}
-        })!).Result)!.Data.As<ProjectData?>();
+            Name = result.Name,
+            ModIndex = result.ModIndex,
+            OutputPath = result.OutputPath,
+            CookedAssetsPath = result.CookedAssetsPath
+        }, ct);
 
-        if (result == null)
-        {
-            return;
-        }
-        
-        await _appDataOptions.Update(options =>
-        {
-            var projectToUpdate = options.Projects
-                .Find(p => p.Id == projectId)!;
-
-            projectToUpdate.OutputPath = result.OutputPath;
-            projectToUpdate.CookedAssetsPath = result.CookedAssetsPath;
-            projectToUpdate.ModIndex = result.ModIndex;
-            projectToUpdate.Name = result.Name;
-        });
-    }
-
-    public void DeleteProject(Guid projectId)
-    {
-        _appDataOptions.Update(appData =>
-        {
-            appData.Projects = appData.Projects
-                .Where(p => p.Id != projectId)
-                .ToList();
-
-            if (appData.CurrentProject != projectId) return;
-            
-            appData.CurrentProject = appData.Projects
-                .FirstOrDefault()?.Id ?? Guid.Empty;
-            
-            _context.ProjectChanged(GetCurrentProject()!);
-        });
-    }
-    
-    public ProjectData? GetCurrentProject()
-    {
-        var data = _appDataOptions.Value;
-
-        return data.Projects
-            .FirstOrDefault(p => p.Id == data.CurrentProject);
-    }
-
-    public ProjectData GetProjectById(Guid projectId)
-    {
-        return _appDataOptions.Value.Projects
-            .First(p => p.Id == projectId);
-    }
-
-    public IReadOnlyCollection<ProjectData> GetProjects()
-    {
-        return _appDataOptions.Value.Projects;
-    }
-
-    public async Task AddAssets()
-    {
-        var currentProject = GetCurrentProject()!;
-
-        var contentPath = Path.Combine(currentProject.CookedAssetsPath, "Content");
-
-        var selectedFiles = await _blazorOptions.Value.FilesHelper("Select assets", contentPath);
-
-        try
-        {
-            await _appDataOptions.Update(options =>
+        _appState.Projects = projects
+            .Select(p => new ProjectState
             {
-                var projectToUpdate = options.Projects
-                    .First(p => p.Id == options.CurrentProject);
-
-                var newAssets = selectedFiles
-                    .Select(path =>
-                    {
-                        var file = new FileInfo(path);
-
-                        var assetPath = file.FullName.Replace(currentProject.CookedAssetsPath, "");
-
-                        if (!assetPath.StartsWith("\\Content"))
-                        {
-                            throw new FormatException();
-                        }
-
-                        if (projectToUpdate.Items.Any(i => i.Path == assetPath))
-                        {
-                            return null;
-                        }
-
-                        return new ProjectItemData
-                        {
-                            Name = file.Name,
-                            Path = assetPath
-                        };
-                    })
-                    .Where(i => i != null)
-                    .Select(i => i!)
-                    .ToList();
-
-                projectToUpdate.Items
-                    .AddRange(newAssets);
-
-                if (newAssets.Count < selectedFiles.Count && newAssets.Count > 0)
-                {
-                    ShowToast("Added new Assets, but some where already imported", MessageType.Info);
-                    return;
-                }
-                
-                if (newAssets.Count == 0)
-                {
-                    ShowToast("All assets already imported or no selected assets", MessageType.Info);
-                    return;
-                }
-
-                ShowToast("Added new Assets", MessageType.Info);
-            });
-        }
-        catch (FormatException)
-        {
-            ShowToast("Some files where Invalid, make sure you select files from the cooked folder", MessageType.Error);
-        }
+                Id = p.Id,
+                Name = p.Name,
+                ModIndex = p.ModIndex,
+                OutputPath = p.OutputPath,
+                CookedAssetsPath = p.CookedAssetsPath
+            }).ToArray();
+        
+        _loaderService.RemoveLoader(LoadersNames.AddProject);
+        
+        _helpers.ShowToast($"New project [{result.Name}] added", MessageType.Info);
+        
+        _stateWatchers.TriggerOnProjectChanged();
     }
 
-    public async Task RemoveAssets(IReadOnlyCollection<Guid> assetsToDelete)
+    public Task<bool> Stage(CancellationToken ct)
     {
-        await _appDataOptions.Update(options =>
-        {
-            var projectToUpdate = options.Projects
-                .First(p => p.Id == options.CurrentProject);
-            
-            projectToUpdate.Items = 
-                projectToUpdate.Items
-                    .Where(i => !assetsToDelete.Contains(i.Id))
-                    .ToList();
-        });
+        throw new NotImplementedException();
     }
 
-    public async Task<bool> Stage()
+    public Task<bool> Package(CancellationToken ct)
     {
-        var project = GetCurrentProject();
-
-        if (project == null)
-        {
-            ShowToast("No Selected Project", MessageType.Warning);
-            return false;
-        }
-        
-        var data = _appDataOptions.Value;
-
-        await _toolsService.StageAsync(project, data.Guids, data.Uids);
-        
-        ShowToast($"Mod [{project.Name}] Staged", MessageType.Info);
-
-        return true;
+        throw new NotImplementedException();
     }
 
-    public async Task<bool> Package()
+    public Task<bool> Copy(CancellationToken ct)
     {
-        var project = GetCurrentProject();
-
-        if (project == null)
-        {
-            ShowToast("No Selected Project", MessageType.Warning);
-            return false;
-        }
-
-        await _toolsService.PackageAsync(project);
-        
-        
-        ShowToast($"Mod [{project.Name}] Packaged", MessageType.Info);
-
-        return true;
-    }
-
-    public async Task<bool> Copy()
-    {
-        var project = GetCurrentProject();
-
-        if (project == null)
-        {
-            ShowToast("No Selected Project", MessageType.Warning);
-            return false;
-        }
-
-        await _toolsService.CopyFiles(project);
-
-        ShowToast($"Mod [{project.Name}] Copied", MessageType.Info);
-        
-        return true;
+        throw new NotImplementedException();
     }
 
     public void LaunchGame()
     {
-        _windowsHelpers.StartGame();
-
-        ShowToast("Game Launched", MessageType.Info);
+        _appActions.LaunchGame();
     }
 
-    public async Task DevExpress()
+    public async Task DevExpress(CancellationToken ct)
     {
-        if (await Stage() && await Package() && await Copy())
+        if (await Stage(ct) && await Package(ct) && await Copy(ct))
         {
             LaunchGame();
+        }
+        else
+        {
+            _helpers.ShowToast("Failed to Dev Express, try again each step by themselves", MessageType.Error);
         }
     }
 
     public void OpenModsFolder()
     {
-        try
+        if (!_appActions.OpenModsFolder())
         {
-            _windowsHelpers.OpenFolder(Constants.PaksFolder);
-        }
-        catch (Exception)
-        {
-            ShowToast($"Error opening asset folder [{Constants.PaksFolder}]", MessageType.Warning);
+            _helpers.ShowToast($"Error opening asset folder [{Constants.PaksFolder}]", MessageType.Warning);
         }
     }
-    
+
     public void ClearLegacyMods()
     {
-        try
+        if (_appActions.ClearModsFolder())
         {
-            Directory.Delete(Constants.PaksFolder, true);
-            Directory.CreateDirectory(Constants.PaksFolder);
-            
-            ShowToast("Legacy Mods Cleared.", MessageType.Info);
+            _helpers.ShowToast("Legacy Mods Cleared.", MessageType.Info);
         }
-        catch (Exception)
+        else
         {
-            ShowToast("Failed to clear mods folder. Check if game is running.", MessageType.Warning);
+            _helpers.ShowToast("Failed to clear mods folder. Check if game is running.", MessageType.Warning);
         }
     }
 
-    public void OpenAssetsFolder(Guid projectId)
+    public async Task SetCurrentProject(Guid projectId, CancellationToken ct)
     {
-        var path = _appDataOptions.Value.Projects
-            .First(p => p.Id == projectId)
-            .CookedAssetsPath;
+        _loaderService.AddLoader(LoadersNames.ChangeProject);
+        
+        await _projectActions.SetCurrentProject(projectId, ct);
 
-        try
+        _appState.SelectedProject = projectId;
+        
+        _loaderService.RemoveLoader(LoadersNames.ChangeProject);
+        
+        _stateWatchers.TriggerOnSelectedProjectChanged();
+    }
+
+    public async Task EditProject(Guid projectId, CancellationToken ct)
+    {
+        var project = _appState.Projects
+            .First(p => p.Id == projectId);
+        
+        var result = (await (await _dialogService.ShowAsync<EditProjectDialog>(null, new DialogParameters
         {
-            _windowsHelpers.OpenFolder(path);
+            {"Project", new ProjectData(project)}
+        })!).Result)!.Data.As<ProjectData?>();
+
+        _loaderService.AddLoader(LoadersNames.EditProject);
+        
+        if (result == null)
+        {
+            _loaderService.RemoveLoader(LoadersNames.EditProject);
+            return;
         }
-        catch (Exception)
+
+        await _projectActions.UpdateProject(new App.Configuration.Data.ProjectData(result.Id)
         {
-            ShowToast($"Error opening asset folder [{path}]", MessageType.Warning);
+            Name = result.Name,
+            ModIndex = result.ModIndex,
+            OutputPath = result.OutputPath,
+            CookedAssetsPath = result.CookedAssetsPath
+        }, ct);
+
+        var existingProjects = _appState.Projects
+            .ToList();
+
+        var index = existingProjects
+            .FindIndex(p => p.Id == projectId);
+
+        existingProjects[index] = new ProjectState
+        {
+            Id = result.Id,
+            Name = result.Name,
+            ModIndex = result.ModIndex,
+            OutputPath = result.OutputPath,
+            CookedAssetsPath = result.CookedAssetsPath
+        };
+
+        _appState.Projects = existingProjects;
+        
+        _loaderService.RemoveLoader(LoadersNames.EditProject);
+    }
+
+    public async Task DeleteProject(Guid projectId, CancellationToken ct)
+    {
+        _loaderService.AddLoader(LoadersNames.DeleteProject);
+
+        var project = _appState.Projects
+            .First(p => p.Id == projectId);
+
+        await _projectActions.DeleteProject(projectId, ct);
+
+        _appState.Projects = _appState.Projects
+            .Where(p => p.Id != projectId)
+            .ToArray();
+
+        var changedProject = false;
+        if (_appState.SelectedProject == projectId)
+        {
+            _appState.SelectedProject = _appState.Projects
+                .FirstOrDefault()?.Id ?? Guid.Empty;
+            changedProject = true;
+        }
+        
+        _loaderService.RemoveLoader(LoadersNames.DeleteProject);
+        
+        _helpers.ShowToast($"Project [{project.Name}] was removed", MessageType.Info);
+        
+        _stateWatchers.TriggerOnProjectChanged();
+        if (changedProject)
+        {
+            _stateWatchers.TriggerOnSelectedProjectChanged();
         }
     }
 
     public void OpenDistFolder(Guid projectId)
     {
-        var path = _appDataOptions.Value.Projects
-            .First(p => p.Id == projectId)
-            .OutputPath;
-
-        try
+        if (!_projectActions.OpenDistFolder(projectId))
         {
-            _windowsHelpers.OpenFolder(path);
-        }
-        catch (Exception)
-        {
-            ShowToast($"Error opening dist folder [{path}]", MessageType.Warning);
+            _helpers.ShowToast("Failed to open dist folder.", MessageType.Warning);
         }
     }
-    
+
+    public (ProjectState? project, IReadOnlyCollection<ProjectItemState> items) GetCurrentProject()
+    {
+        _appState.ProjectsItems.TryGetValue(_appState.SelectedProject, out var items);
+        
+        return (_appState.Projects
+            .FirstOrDefault(p => p.Id == _appState.SelectedProject), items ?? Array.Empty<ProjectItemState>());
+    }
+
+    public IReadOnlyCollection<ProjectState> GetProjects()
+    {
+        return _appState.Projects;
+    }
+
+    public Task AddAssets(CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task RemoveAssets(IReadOnlyCollection<Guid> assetsToDelete, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
     public void AddUid()
     {
-        _appDataOptions.Update(options =>
-        {
-            var newUid = new UidData
-            {
-                Name = $"Uid #{options.Uids.Count}"
-            };
-
-            options.Uids.Add(newUid);
-        });
+        throw new NotImplementedException();
     }
 
     public void RemoveUid(Guid? uidId)
     {
-        if (uidId == null)
-        {
-            ShowToast("No UID selected.", MessageType.Warning);
-        }
-        
-        _appDataOptions.Update(options =>
-        {
-            options.Uids = options.Uids
-                .Where(g => g.Id != uidId)
-                .ToList();
-        });
+        throw new NotImplementedException();
     }
 
-    public IReadOnlyCollection<UidData> GetUids()
+    public IReadOnlyCollection<UidState> GetUids()
     {
-        return _appDataOptions.Value.Uids;
+        return _appState.UIDs;
+    }
+
+    public void UpdateUid(UidState? uidData)
+    {
+        throw new NotImplementedException();
     }
 
     public void AddGuid()
     {
-        _appDataOptions.Update(options =>
-        {
-            var newGuid = new GuidData
-            {
-                Name = $"Guid #{options.Guids.Count}"
-            };
-
-            options.Guids.Add(newGuid);
-        });
+        throw new NotImplementedException();
     }
 
     public void RemoveGuid(Guid? guidId)
     {
-        if (guidId == null)
-        {
-            ShowToast("No GUID selected.", MessageType.Warning);
-        }
-        
-        _appDataOptions.Update(options =>
-        {
-            options.Guids = options.Guids
-                .Where(g => g.Id != guidId)
-                .ToList();
-        });
+        throw new NotImplementedException();
     }
 
-    public IReadOnlyCollection<GuidData> GetGuids()
+    public IReadOnlyCollection<GuidState> GetGuids()
     {
-        return _appDataOptions.Value.Guids;
+        return _appState.GUIDs;
     }
 
-    public void UpdateGuid(GuidData? guidData)
+    public void UpdateGuid(GuidState? guidData)
     {
-        if (guidData == null)
-        {
-            return;
-        }
-        
-        _appDataOptions.Update(options =>
-        {
-            var guid = options.Guids
-                .First(g => g.Id == guidData.Id);
-
-            guid.Name = guidData.Name;
-            guid.RetailGuid = guidData.RetailGuid;
-            guid.ModdedGuid = guidData.ModdedGuid;
-        });
+        throw new NotImplementedException();
     }
 
-    public void UpdateUid(UidData? uidData)
+    public string GetReadme()
     {
-        if (uidData == null)
-        {
-            return;
-        }
-        
-        _appDataOptions.Update(options =>
-        {
-            var uid = options.Uids
-                .First(g => g.Id == uidData.Id);
-
-            uid.Name = uidData.Name;
-            uid.RetailUid = uidData.RetailUid;
-            uid.ModdedUid = uidData.ModdedUid;
-        });
-    }
-
-    private void ShowToast(string message, MessageType type)
-    {
-        switch (type)
-        {
-            case MessageType.Error:
-                _snackbar.Add(message, Severity.Error, key: Guid.NewGuid().ToString("N"));
-
-                break;
-            case MessageType.Warning:
-                _snackbar.Add(message, Severity.Warning, key: Guid.NewGuid().ToString("N"));
-                
-                break;
-            case MessageType.Info:
-                _snackbar.Add(message, Severity.Info, key: Guid.NewGuid().ToString("N"));
-                
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(type), type, null);
-        }
-    }
-
-    private void OnAppStateUpdated()
-    {
-        _context.StateChanged();
-    }
-    
-    private async Task<bool?> SaveSettingsInner()
-    {
-        var result = (await (await _dialogService.ShowAsync<SaveConfigDialog>()!).Result)!.Data.As<SaveConfigResult?>();
-
-        if (result == null)
-        {
-            return false;
-        }
-
-        if (result.Save == false)
-        {
-            return null;
-        }
-
-        var contents = await _appConfiguration.ExportConfig(result.PartialType);
-
-        if (contents == null)
-        {
-            return false;
-        }
-
-        var exporterHelperResult = await _blazorOptions.Value.ConfigExportHelper(result.PartialType, contents);
-
-        return exporterHelperResult;
+        return _appState.Readme;
     }
 }
