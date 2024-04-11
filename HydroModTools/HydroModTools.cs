@@ -58,7 +58,7 @@ namespace HydroModTools
                 .SingleInstance();
 
             services
-                .RegisterType<Packager>();
+                .RegisterType<PakerV3>();
             services
                 .RegisterType<Stager>();
             services.Register((c) =>

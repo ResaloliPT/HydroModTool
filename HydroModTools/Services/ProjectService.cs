@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static HydroModTools.Common.Constants;
@@ -14,10 +15,12 @@ namespace HydroModTools.Services
     internal class ProjectService : IProjectsService
     {
         private readonly IConfigurationService _configurationService;
+        private readonly PakerV3 _pakerV3;
 
-        public ProjectService(IConfigurationService configurationService)
+        public ProjectService(IConfigurationService configurationService, PakerV3 pakerV3)
         {
             _configurationService = configurationService;
+            _pakerV3 = pakerV3;
         }
 
         public async Task AddProject(Guid id, string name, short modIndex, string assetsPath, string outputPath)
@@ -106,7 +109,9 @@ namespace HydroModTools.Services
 
             reportProgress.Invoke(new ProgressbarStateModel((int)Math.Floor(Utilities.Remap(10, 0, 100, progressMin, progressMax)), "Start Packaging"));
 
-            await Packager.PackageAsync(reportProgress.Invoke, 10, 90, project);
+            await _pakerV3.PakMod(project.OutputPath, project.Name, project.ModIndex, CancellationToken.None);
+            
+            reportProgress.Invoke(new ProgressbarStateModel((int)Math.Floor(Utilities.Remap(100, 0, 100, progressMin, progressMax)), "Done Packaging"));
         }
 
         public async Task StageProject(Guid id, int progressMin, int progressMax, Action<ProgressbarStateModel> reportProgress)
