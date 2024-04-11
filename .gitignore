@@ -1,8 +1,5 @@
-HydroModTools.Installer/Installs
-HydroModTools.Installer/HydroModtools.wxs
-
-# Created by https://www.toptal.com/developers/gitignore/api/csharp,visualstudio,visualstudiocode,rider
-# Edit at https://www.toptal.com/developers/gitignore?templates=csharp,visualstudio,visualstudiocode,rider
+# Created by https://www.toptal.com/developers/gitignore/api/rider,visualstudiocode,visualstudio,csharp
+# Edit at https://www.toptal.com/developers/gitignore?templates=rider,visualstudiocode,visualstudio,csharp
 
 ### Csharp ###
 ## Ignore Visual Studio temporary files, build results, and
@@ -191,7 +188,7 @@ publish/
 *.azurePubxml
 # Note: Comment the next line if you want to checkin your web deploy settings,
 # but database connection strings (with potential passwords) will be unencrypted
-#*.pubxml
+*.pubxml
 *.publishproj
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
@@ -494,11 +491,6 @@ fabric.properties
 .history
 .ionide
 
-# Support for Project snippet scope
-.vscode/*.code-snippets
-
-# Ignore code-workspaces
-
 ### VisualStudio ###
 
 # User-specific files
@@ -680,4 +672,4 @@ fabric.properties
 ### VisualStudio Patch ###
 # Additional files built by Visual Studio
 
-# End of https://www.toptal.com/developers/gitignore/api/csharp,visualstudio,visualstudiocode,rider
+# End of https://www.toptal.com/developers/gitignore/api/rider,visualstudiocode,visualstudio,csharp
