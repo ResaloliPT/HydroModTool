@@ -1,0 +1,78 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:HydroToolChain.Avalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:pages="clr-namespace:HydroToolChain.Avalonia.Views.Pages"
+        xmlns:models="clr-namespace:HydroToolChain.Avalonia.Models"
+        mc:Ignorable="d" d:DesignWidth="1920" d:DesignHeight="1080"
+        x:Class="HydroToolChain.Avalonia.Views.MainWindowView"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/hydroneer.ico"
+        MinWidth="1060" MinHeight="650"
+        Title="Hydroneer Modding Toolchain">
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+    
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="10" BorderThickness="0 0 0 2" BorderBrush="Aquamarine">
+            <Panel Margin="0,0,0,0" Height="60">
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button
+                        Command="{Binding TogglePage}" CommandParameter="{x:Static models:PageType.App}"
+                        FontSize="25"
+                        CornerRadius="10 0 0 10"
+                        BorderThickness="0 0 1 0"
+                        BorderBrush="Aquamarine">
+                        CREATE MODS
+                    </Button>
+                    <Button
+                        Command="{Binding TogglePage}"  CommandParameter="{x:Static models:PageType.About}"
+                        FontSize="25"
+                        CornerRadius="0 10 10 0"
+                        BorderThickness="1 0 0 0"
+                        BorderBrush="Aquamarine">
+                        ABOUT
+                    </Button>
+                </StackPanel>
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Horizontal">
+                    <Button
+                        FontSize="25"
+                        CornerRadius="10 0 0 10"
+                        BorderThickness="0 0 1 0"
+                        BorderBrush="Aquamarine">
+                        LOAD
+                    </Button>
+                    <Button
+                        FontSize="25"
+                        CornerRadius="0 10 10 0"
+                        BorderThickness="1 0 0 0"
+                        BorderBrush="Aquamarine">
+                        SAVE
+                    </Button>
+                </StackPanel>
+                <DockPanel
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Dock="Right" Margin="0 0 10 0">
+                    <Button Command="{Binding ShowGitHub}" Classes="AppLink" Content="Hydroneer Modding Toolchain">
+                        <ToolTip.Tip>Open this tool Github!</ToolTip.Tip>
+                    </Button>
+                </DockPanel>
+            </Panel>
+        </Border>
+        
+        <DockPanel IsVisible="{Binding IsAppPageVisible}">
+            <pages:AppPageView/>
+        </DockPanel>
+        
+        <DockPanel IsVisible="{Binding IsAboutPageVisible}">
+            <pages:AboutPageView/>
+        </DockPanel>
+    </DockPanel>
+</Window>

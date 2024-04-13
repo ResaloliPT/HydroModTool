@@ -1,0 +1,30 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:vm="using:HydroToolChain.Avalonia.ViewModels.Pages"
+             x:DataType="vm:AppPageViewModel"
+             x:Class="HydroToolChain.Avalonia.Views.Pages.AppPageView">
+    <StackPanel
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch">
+        <DockPanel
+            HorizontalAlignment="Stretch"
+            Dock="Top">
+            <TextBlock Text="Header"></TextBlock>
+        </DockPanel>
+        <DockPanel
+            HorizontalAlignment="Stretch">
+            <SplitView
+                DisplayMode="Inline"
+                OpenPaneLength=""
+                IsPaneOpen="True">
+                <SplitView.Pane>
+                    <TextBlock Text="Pane"></TextBlock>
+                </SplitView.Pane>
+                <TextBlock Text="Content"></TextBlock>
+            </SplitView>
+        </DockPanel>
+    </StackPanel>
+</UserControl>

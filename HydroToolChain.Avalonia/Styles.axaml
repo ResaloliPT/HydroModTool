@@ -1,0 +1,26 @@
+﻿<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <Button Classes="AppLink" Content="Hydroneer Modding Toolchain"></Button>
+        </Border>
+    </Design.PreviewWith>
+
+    <Style Selector="Button.AppLink">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <TextBlock
+                    Padding="0"
+                    Margin="0"
+                    FontSize="25"
+                    FontFamily="{StaticResource AlmendraSC}"
+                    Text="{TemplateBinding Content}"
+                    Foreground="#776be7"
+                    Background="Transparent"
+                    TextDecorations="Underline" />
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+</Styles>

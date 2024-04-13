@@ -1,0 +1,22 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="HydroToolChain.Avalonia.App"
+             xmlns:local="using:HydroToolChain.Avalonia"
+             xmlns:themes="clr-namespace:Material.Styles.Themes;assembly=Material.Styles"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             RequestedThemeVariant="Dark">
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+             
+    <Application.Styles>
+        <themes:MaterialTheme BaseTheme="Dark" PrimaryColor="Purple" SecondaryColor="Lime" />
+        <StyleInclude Source="Styles.axaml"></StyleInclude>
+    </Application.Styles>
+             
+    <Application.Resources>
+        <ResourceDictionary>
+            <FontFamily x:Key="AlmendraSC">/assets/AlmendraSC-Bold.otf</FontFamily>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
