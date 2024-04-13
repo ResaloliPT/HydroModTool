@@ -28,14 +28,25 @@ public class PakerV3
             OutputPath = Path.Combine(workingDirectory, "dist")
         };
 
-        await using var fileStream = File.OpenWrite(Path.Combine(_info!.OutputPath, _info!.OutputFileName));
+        var fileInfo = new FileInfo(Path.Combine(_info!.OutputPath, _info!.OutputFileName));
+        if (fileInfo.Directory is not null && !fileInfo.Directory.Exists)
+        {
+            fileInfo.Directory.Create();
+        }
 
-        Console.WriteLine("PakV3 Start");
+        if (fileInfo.Exists)
+        {
+            fileInfo.Delete();
+        }
+        
+        await using var fileStream = fileInfo.OpenWrite();
+
+        Console.WriteLine(@"PakV3 Start");
         await BuildPak(fileStream, ct);
             
         await fileStream.FlushAsync(ct);
         fileStream.Close();
-        Console.WriteLine("PakV3 Completed");
+        Console.WriteLine(@"PakV3 Completed");
     }
 
     private IList<string> BuildFilesList(string start)

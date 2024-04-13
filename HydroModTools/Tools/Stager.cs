@@ -23,6 +23,8 @@ namespace HydroModTools.Tools
                 Directory.Delete(basePathOut, true);
             }
 
+            Directory.CreateDirectory(basePathOut);
+
             var missingFiles = VerifyFiles(basePathSrc, project.Items);
 
             if (missingFiles.Count > 0)
